@@ -5,22 +5,22 @@ import { useNotes } from "@/contexts/notes-context"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Calendar, User, Edit, Trash2 } from "lucide-react"
+import { ArrowLeft, Calendar, User, Edit, Trash2 } from 'lucide-react'
 
-export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
+export default function NotePage({ params }: { params: { id: string } }) {
   const { user, isLoading } = useAuth()
   const { getNoteById, deleteNote } = useNotes()
   const router = useRouter()
-  const [noteId, setNoteId] = useState<string>("")
   const [note, setNote] = useState<any>(null)
+  const [noteLoading, setNoteLoading] = useState(true)
+
+  const noteId = params.id
 
   useEffect(() => {
-    params.then(({ id }) => {
-      setNoteId(id)
-      const foundNote = getNoteById(id)
-      setNote(foundNote)
-    })
-  }, [params, getNoteById])
+    const foundNote = getNoteById(noteId)
+    setNote(foundNote)
+    setNoteLoading(false)
+  }, [noteId, getNoteById])
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -28,7 +28,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     }
   }, [user, isLoading, router])
 
-  if (isLoading) {
+  if (isLoading || noteLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
         <div className="spinner" />
@@ -115,7 +115,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
               </div>
             </div>
 
-            {user.name === note.author && (
+            {(user.id === note.authorId || user.name === note.author) && (
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <Link href={`/edit-note/${noteId}`} className="btn btn-secondary">
                   <Edit size={16} />
@@ -129,7 +129,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
             )}
           </div>
 
-          {note.tags.length > 0 && (
+          {note.tags && note.tags.length > 0 && (
             <div className="tags">
               {note.tags.map((tag: string) => (
                 <span key={tag} className="tag">
